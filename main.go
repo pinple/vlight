@@ -2,17 +2,23 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/parnurzeal/gorequest"
 	"gopkg.in/gomail.v2"
 	"log"
 	"regexp"
+	"strconv"
+	"strings"
 )
 const (
 	FundRootUrl = "http://fundgz.1234567.com.cn/js/"
+	MIN_RISE_NUM = 1
+	MAX_FALL_NUM = -0.8
 )
 
 
-func FetchFund(codes []string) (fund []map[string]string) {
+func FetchFund(codes []string) []map[string]string {
+	var  fundResult []map[string]string
 	for _, code := range codes {
 		fundUrl := FundRootUrl + code + ".js"
 		request := gorequest.New()
@@ -27,17 +33,41 @@ func FetchFund(codes []string) (fund []map[string]string) {
 		fundData := ret[1]
 		var fundDataMap map[string]string
 		if err := json.Unmarshal(fundData, &fundDataMap); err == nil {
-			fund = append(fund, fundDataMap)
-			table := `
+			fundResult = append(fundResult, fundDataMap)
+		}
+	}
+	return fundResult
+}
+
+func GenerateHTML(fundResult []map[string]string) string {
+	var elements []string
+	var content string
+	for _, fund := range fundResult{
+		gszzl, err := strconv.ParseFloat(fund["gszzl"], 32)
+		if err != nil {
+			fmt.Printf("!!error!!: %s", err)
+			continue
+		}
+		if gszzl > 0 {
+			fund["gszzl"] = "+" + strconv.FormatFloat(gszzl, 'f', -1, 32)
+		}
+		// 涨跌幅度超出设定值才发出通知
+		if (gszzl > 0 && gszzl >= MIN_RISE_NUM) || (gszzl < 0 && gszzl <= MAX_FALL_NUM) {
+			element := `
             <tr>
-              <td width="50" align="center">` + fundDataMap["name"] + `</td>
-              <td width="50" align="center">` + fundDataMap["gszzl"] + `%</td>
-              <td width="50" align="center">` + fundDataMap["gsz"] + `</td>
-              <td width="50" align="center">` + fundDataMap["dwjz"] + `</td>
-              <td width="50" align="center">` + fundDataMap["gztime"] + `</td>
+              <td width="50" align="center">` + fund["name"] + `</td>
+              <td width="50" align="center">` + fund["gszzl"] + `%</td>
+              <td width="50" align="center">` + fund["gsz"] + `</td>
+              <td width="50" align="center">` + fund["dwjz"] + `</td>
+              <td width="50" align="center">` + fund["gztime"] + `</td>
             </tr>
-		`
-			html := `
+			`
+			elements = append(elements, element)
+		}
+	}
+	content = strings.Join(elements, "\n")
+	if content != ""{
+		html := `
 			</html>
 				<head>
 					<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -53,45 +83,38 @@ func FetchFund(codes []string) (fund []map[string]string) {
 							  <td width="50" align="center">当前估算净值</td>
 							  <td width="50" align="center">昨日单位净值</td>
 							  <td width="50" align="center">估算时间</td>
-							</tr>` + table + `
+							</tr>` + content + `
 						</table>
 					</div>
             	</div>
             </div>
             </body>
         </html>`
-			return html
-		}
+
+		return html
 	}
+
 	return ""
 }
 
-func GenHTML(funds []map[string]string) {
-	for key, value := range funds {
-
-	}
-}
-
-func SendEmail(fundData string)  {
-	if fundData == "" {
+func SendEmail(content string)  {
+	if content == "" {
 		return
 	}
 	m := gomail.NewMessage()
 	m.SetHeader("From", "365999802@qq.com")
 	m.SetHeader("To", "365999802@qq.com")
 	m.SetHeader("Subject", "基金涨跌监控")
-	m.SetBody("text/html", fundData)
-
+	m.SetBody("text/html", content)
 	d := gomail.NewDialer("smtp.qq.com", 587, "365999802@qq.com", "")
-
 	if err := d.DialAndSend(m); err != nil {
 		panic(err)
 	}
 }
 
 func main() {
-	//ret := FetchFund("180012")
-	fundSlice := []string{"180012", "167301"}
-	ret := FetchFund(fundSlice)
-	SendEmail(ret)
+	fundSlice := []string{"180012", "003095", "519778"}
+	fundResult := FetchFund(fundSlice)
+	content := GenerateHTML(fundResult)
+	SendEmail(content)
 }
