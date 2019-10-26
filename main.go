@@ -6,6 +6,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"gopkg.in/gomail.v2"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -101,12 +102,14 @@ func SendEmail(content string)  {
 	if content == "" {
 		return
 	}
+	emailName := os.Getenv("EMAIL_NAME")
+	emailPassword := os.Getenv("EMAIL_PASSWORD")
 	m := gomail.NewMessage()
-	m.SetHeader("From", "365999802@qq.com")
-	m.SetHeader("To", "365999802@qq.com")
+	m.SetHeader("From", emailName)
+	m.SetHeader("To", emailName)
 	m.SetHeader("Subject", "基金涨跌监控")
 	m.SetBody("text/html", content)
-	d := gomail.NewDialer("smtp.qq.com", 587, "365999802@qq.com", "")
+	d := gomail.NewDialer("smtp.qq.com", 587, emailName, emailPassword)
 	if err := d.DialAndSend(m); err != nil {
 		panic(err)
 	}
