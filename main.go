@@ -17,6 +17,8 @@ const (
 	MAX_FALL_NUM = -0.8
 )
 
+var fundCodeSlice = []string{"180012", "003095", "519778"}
+
 
 func FetchFund(codes []string) []map[string]string {
 	var  fundResult []map[string]string
@@ -116,8 +118,7 @@ func SendEmail(content string)  {
 }
 
 func main() {
-	fundSlice := []string{"180012", "003095", "519778"}
-	fundResult := FetchFund(fundSlice)
+	fundResult := FetchFund(fundCodeSlice)
 	content := GenerateHTML(fundResult)
 	SendEmail(content)
 }
