@@ -13,8 +13,8 @@ import (
 )
 const (
 	FundRootUrl = "http://fundgz.1234567.com.cn/js/"
-	MIN_RISE_NUM = 1
-	MAX_FALL_NUM = -0.8
+	MIN_RISE_NUM = 1.5
+	MAX_FALL_NUM = -1.5
 )
 
 var fundCodeSlice = []string{"180012", "003095", "519778"}
