@@ -132,7 +132,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			dailyElements = append(dailyElements, dailyElement)
 		}
 		// 一周涨幅
-		if now.Weekday() == watchWeekDay {
+		if now.Weekday().String() == watchWeekDay {
 			weeklyElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
@@ -142,7 +142,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			weeklyElements = append(weeklyElements, weeklyElement)
 		}
 		// 月度涨幅
-		if now.Day() == watchMonthDay {
+		if now.Day() == strconv.Atoi(watchMonthDay) {
 			oneMonthElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
