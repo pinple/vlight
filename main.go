@@ -30,21 +30,21 @@ var dailyTitle = `
 	             <td width="50" align="center">当前估算净值</td>
 	             <td width="50" align="center">昨日单位净值</td>
 	             <td width="50" align="center">估算时间</td>
-                 </tr> \n
+                 </tr>
                  `
 
 var weeklyTitle = `
                  <tr>
 	             <td width="50" align="center">基金名称</td>
 	             <td width="50" align="center">近1周</td>
-                 </tr> \n
+                 </tr>
                  `
 
 var oneMonthTitle = `
                  <tr>
 	             <td width="50" align="center">基金名称</td>
 	             <td width="50" align="center">近1月</td>
-                 </tr> \n
+                 </tr>
                  `
 
 func FetchFund(codes []string) []map[string]string {
@@ -147,7 +147,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			oneMonthElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
-                                     <td width="50" align="center">` + fund["monthlyChange"] + `</td>
+                                     <td width="50" align="center">` + fund["oneMonthChange"] + `</td>
                                    </tr>
                                    `
 			oneMonthElements = append(oneMonthElements, oneMonthElement)
@@ -156,8 +156,16 @@ func GenerateHTML(fundResult []map[string]string) string {
 	dailyContent = strings.Join(dailyElements, "\n")
 	weeklyContent = strings.Join(weeklyElements, "\n")
 	oneMonthContent = strings.Join(oneMonthElements, "\n")
-	finalText = dailyTitle + dailyContent + weeklyTitle + weeklyContent + oneMonthTitle + oneMonthContent
 	if dailyContent != "" || weeklyContent != "" || oneMonthContent != "" {
+		if dailyContent != "" {
+			finalText = finalText + dailyTitle + dailyContent
+		}
+		if weeklyContent != "" {
+			finalText = finalText + weeklyTitle + weeklyContent
+		}
+		if oneMonthContent != "" {
+			finalText = finalText + oneMonthTitle + oneMonthContent
+		}
 		html := `
 			</html>
 			    <head>
