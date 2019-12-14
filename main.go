@@ -19,8 +19,8 @@ const (
 	FundHTMLUrl     = "http://fund.eastmoney.com/"
 	MIN_RISE_NUM    = 1.5
 	MAX_FALL_NUM    = -1.5
-	WATCH_WEEK_DAY  = 4
-	WATCH_MONTH_DAY = 25
+	WATCH_WEEK_DAY  = os.Getenv("WATCH_WEEK_DAY")
+	WATCH_MONTH_DAY = os.Getenv("WATCH_MONTH_DAY")
 )
 
 var fundCodeSlice = []string{"180012", "003095", "519778"}
