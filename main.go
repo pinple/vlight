@@ -107,7 +107,9 @@ func GenerateHTML(fundResult []map[string]string) string {
 	var weeklyContent string
 	var oneMonthElements []string
 	var oneMonthContent string
-	var finalText string
+	var dailyText string
+	var weeklyText string
+	var oneMonthText string
 	now := time.Now()
 	for _, fund := range fundResult {
 		gszzl, err := strconv.ParseFloat(fund["gszzl"], 32)
@@ -158,13 +160,22 @@ func GenerateHTML(fundResult []map[string]string) string {
 	oneMonthContent = strings.Join(oneMonthElements, "\n")
 	if dailyContent != "" || weeklyContent != "" || oneMonthContent != "" {
 		if dailyContent != "" {
-			finalText = finalText + dailyTitle + dailyContent
+			dailyText = `
+                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
+				    ` + dailyTitle + dailyContent + `
+				    </table>`
 		}
 		if weeklyContent != "" {
-			finalText = finalText + weeklyTitle + weeklyContent
+			weeklyText = `
+                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
+				    ` + weeklyTitle + weeklyContent + `
+				    </table>`
 		}
 		if oneMonthContent != "" {
-			finalText = finalText + oneMonthTitle + oneMonthContent
+			oneMonthText = `
+                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
+				    ` + oneMonthTitle + oneMonthContent + `
+				    </table>`
 		}
 		html := `
 			</html>
@@ -175,9 +186,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			        <div id="container">
 			            <p>基金涨跌监控:</p>
 			            <div id="content">
-				        <table width="30%" border="1" cellspacing="0" cellpadding="0">
-				            ` + finalText + `
-				        </table>
+				            ` + dailyText + weeklyText + oneMonthText + `
 				    </div>
             	                </div>
                             </body>
@@ -209,5 +218,6 @@ func SendEmail(content string) {
 func main() {
 	fundResult := FetchFund(fundCodeSlice)
 	content := GenerateHTML(fundResult)
-	SendEmail(content)
+	fmt.Println(content)
+	// SendEmail(content)
 }
