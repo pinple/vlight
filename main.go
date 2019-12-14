@@ -21,7 +21,8 @@ const (
 	MAX_FALL_NUM    = -1.5
 )
 
-var fundCodeSlice = []string{"180012", "003095", "519778"}
+var fundCodeStr = os.Getenv("WATCH_FUND_CODE")
+var fundCodeSlice = strings.Split(fundCodeStr, "|")
 
 var dailyTitle = `
                  <tr>
