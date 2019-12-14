@@ -19,8 +19,6 @@ const (
 	FundHTMLUrl     = "http://fund.eastmoney.com/"
 	MIN_RISE_NUM    = 1.5
 	MAX_FALL_NUM    = -1.5
-	WATCH_WEEK_DAY  = os.Getenv("WATCH_WEEK_DAY")
-	WATCH_MONTH_DAY = os.Getenv("WATCH_MONTH_DAY")
 )
 
 var fundCodeSlice = []string{"180012", "003095", "519778"}
@@ -101,6 +99,8 @@ func FetchFund(codes []string) []map[string]string {
 }
 
 func GenerateHTML(fundResult []map[string]string) string {
+	var watchWeekDay = os.Getenv("WATCH_WEEK_DAY")
+	var watchMonthDay = os.Getenv("WATCH_MONTH_DAY")
 	var dailyElements []string
 	var dailyContent string
 	var weeklyElements []string
@@ -132,7 +132,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			dailyElements = append(dailyElements, dailyElement)
 		}
 		// 一周涨幅
-		if now.Weekday() == WATCH_WEEK_DAY {
+		if now.Weekday() == watchWeekDay {
 			weeklyElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
@@ -142,7 +142,7 @@ func GenerateHTML(fundResult []map[string]string) string {
 			weeklyElements = append(weeklyElements, weeklyElement)
 		}
 		// 月度涨幅
-		if now.Day() == WATCH_MONTH_DAY {
+		if now.Day() == watchMonthDay {
 			oneMonthElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
