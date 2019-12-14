@@ -142,7 +142,8 @@ func GenerateHTML(fundResult []map[string]string) string {
 			weeklyElements = append(weeklyElements, weeklyElement)
 		}
 		// 月度涨幅
-		if now.Day() == strconv.Atoi(watchMonthDay) {
+		monthNum, err := strconv.Atoi(watchMonthDay)
+		if now.Day() == monthNum {
 			oneMonthElement := `
                                    <tr>
                                      <td width="50" align="center">` + fund["name"] + `</td>
