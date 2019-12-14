@@ -37,14 +37,14 @@ var dailyTitle = `
 var weeklyTitle = `
                  <tr>
 	             <td width="50" align="center">基金名称</td>
-	             <td width="50" align="center">近1周</td>
+	             <td width="50" align="center">近1周净值变化</td>
                  </tr>
                  `
 
 var oneMonthTitle = `
                  <tr>
 	             <td width="50" align="center">基金名称</td>
-	             <td width="50" align="center">近1月</td>
+	             <td width="50" align="center">近1月净值变化</td>
                  </tr>
                  `
 
@@ -219,6 +219,5 @@ func SendEmail(content string) {
 func main() {
 	fundResult := FetchFund(fundCodeSlice)
 	content := GenerateHTML(fundResult)
-	fmt.Println(content)
 	SendEmail(content)
 }
