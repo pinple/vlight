@@ -163,19 +163,19 @@ func GenerateHTML(fundResult []map[string]string) string {
 			dailyText = `
                                     <table width="30%" border="1" cellspacing="0" cellpadding="0">
 				    ` + dailyTitle + dailyContent + `
-				    </table>`
+				    </table> <br><br>`
 		}
 		if weeklyContent != "" {
 			weeklyText = `
                                     <table width="30%" border="1" cellspacing="0" cellpadding="0">
 				    ` + weeklyTitle + weeklyContent + `
-				    </table>`
+				    </table> <br><br>`
 		}
 		if oneMonthContent != "" {
 			oneMonthText = `
                                     <table width="30%" border="1" cellspacing="0" cellpadding="0">
 				    ` + oneMonthTitle + oneMonthContent + `
-				    </table>`
+				    </table> <br><br>`
 		}
 		html := `
 			</html>
@@ -219,5 +219,5 @@ func main() {
 	fundResult := FetchFund(fundCodeSlice)
 	content := GenerateHTML(fundResult)
 	fmt.Println(content)
-	// SendEmail(content)
+	SendEmail(content)
 }
