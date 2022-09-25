@@ -4,78 +4,64 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/parnurzeal/gorequest"
 	"gopkg.in/gomail.v2"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 )
 
-const (
-	FundJsUrl       = "http://fundgz.1234567.com.cn/js/"
-	FundHTMLUrl     = "http://fund.eastmoney.com/"
-	MIN_RISE_NUM    = 1.5
-	MAX_FALL_NUM    = -1.5
+var (
+	fundCodeStr, watchWeekDay, watchMonthDay, emailName, emailPassword string
+)
+var (
+	fundCodeSlice []string
 )
 
-var fundCodeStr = os.Getenv("WATCH_FUND_CODE")
-var fundCodeSlice = strings.Split(fundCodeStr, "|")
+func init() {
+	fundCodeStr = os.Getenv("WATCH_FUND_CODE")
+	//fundCodeStr = "005827,012414,003095,161005"
+	fundCodeSlice = strings.Split(fundCodeStr, ",")
+	watchWeekDay = os.Getenv("WATCH_WEEK_DAY")
+	watchMonthDay = os.Getenv("WATCH_MONTH_DAY")
+	emailName = os.Getenv("EMAIL_NAME")
+	emailPassword = os.Getenv("EMAIL_PASSWORD")
+}
 
-var dailyTitle = `
-                 <tr>
-	             <td width="50" align="center">基金名称</td>
-	             <td width="50" align="center">估算涨幅</td>
-	             <td width="50" align="center">当前估算净值</td>
-	             <td width="50" align="center">昨日单位净值</td>
-	             <td width="50" align="center">估算时间</td>
-                 </tr>
-                 `
-
-var weeklyTitle = `
-                 <tr>
-	             <td width="50" align="center">基金名称</td>
-	             <td width="50" align="center">近1周净值变化</td>
-                 </tr>
-                 `
-
-var oneMonthTitle = `
-                 <tr>
-	             <td width="50" align="center">基金名称</td>
-	             <td width="50" align="center">近1月净值变化</td>
-                 </tr>
-                 `
-
-func FetchFund(codes []string) []map[string]string {
+func fetchFund(codes []string) []map[string]string {
 	var fundResult []map[string]string
 	var weeklyChange string
 	var oneMonthChange string
+	fmt.Printf("codes: %#v\n", codes)
 	for _, code := range codes {
 		fundJsUrl := FundJsUrl + code + ".js"
-		request := gorequest.New()
-		resp, body, err := request.Get(fundJsUrl).End()
-		defer resp.Body.Close()
+		resp1, err := http.Get(fundJsUrl)
 		if err != nil {
-			log.Fatal(err)
-			return nil
+			panic(err)
 		}
+		defer resp1.Body.Close()
 
 		fundHTMLUrl := FundHTMLUrl + code + ".html"
-		resp1, body1, err1 := request.Get(fundHTMLUrl).End()
-		defer resp1.Body.Close()
-		if err1 != nil {
-			log.Fatal(err1)
-			return nil
+		fmt.Printf("fundHTMLUrl: %s\n", string(fundHTMLUrl))
+		resp2, err := http.Get(fundHTMLUrl)
+		if err != nil {
+			panic(err)
 		}
+		defer resp2.Body.Close()
 
 		re, _ := regexp.Compile("jsonpgz\\((.*)\\);")
-		ret := re.FindSubmatch([]byte(body))
+		data, err := io.ReadAll(resp1.Body)
+		if err != nil {
+			panic(err)
+		}
+		ret := re.FindSubmatch(data)
 		fundData := ret[1]
+		fmt.Printf("fundData: %s\n", string(fundData))
 
-		doc, err2 := goquery.NewDocumentFromReader(strings.NewReader(body1))
-		if err2 != nil {
+		doc, err2 := goquery.NewDocumentFromReader(resp2.Body)
+		if err != nil {
 			log.Fatal(err2)
 		}
 		doc.Find("#increaseAmount_stage > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(2)").Each(func(i int, s *goquery.Selection) {
@@ -96,115 +82,15 @@ func FetchFund(codes []string) []map[string]string {
 			fundResult = append(fundResult, fundDataMap)
 		}
 	}
+
+	fmt.Printf("fundResult: %#v\n", fundResult)
 	return fundResult
 }
 
-func GenerateHTML(fundResult []map[string]string) string {
-	var watchWeekDay = os.Getenv("WATCH_WEEK_DAY")
-	var watchMonthDay = os.Getenv("WATCH_MONTH_DAY")
-	var dailyElements []string
-	var dailyContent string
-	var weeklyElements []string
-	var weeklyContent string
-	var oneMonthElements []string
-	var oneMonthContent string
-	var dailyText string
-	var weeklyText string
-	var oneMonthText string
-	now := time.Now()
-	for _, fund := range fundResult {
-		gszzl, err := strconv.ParseFloat(fund["gszzl"], 32)
-		if err != nil {
-			fmt.Printf("!!error!!: %s", err)
-			continue
-		}
-		if gszzl > 0 {
-			fund["gszzl"] = "+" + strconv.FormatFloat(gszzl, 'f', -1, 32)
-		}
-		// 每日涨幅，涨跌幅度超出设定值才发出通知
-		if (gszzl > 0 && gszzl >= MIN_RISE_NUM) || (gszzl < 0 && gszzl <= MAX_FALL_NUM) {
-			dailyElement := `
-                                   <tr>
-                                     <td width="50" align="center">` + fund["name"] + `</td>
-                                     <td width="50" align="center">` + fund["gszzl"] + `%</td>
-                                     <td width="50" align="center">` + fund["gsz"] + `</td>
-                                     <td width="50" align="center">` + fund["dwjz"] + `</td>
-                                     <td width="50" align="center">` + fund["gztime"] + `</td>
-                                   </tr>
-	                           `
-			dailyElements = append(dailyElements, dailyElement)
-		}
-		// 一周涨幅
-		if now.Weekday().String() == watchWeekDay {
-			weeklyElement := `
-                                   <tr>
-                                     <td width="50" align="center">` + fund["name"] + `</td>
-                                     <td width="50" align="center">` + fund["weeklyChange"] + `</td>
-                                   </tr>
-                                   `
-			weeklyElements = append(weeklyElements, weeklyElement)
-		}
-		// 月度涨幅
-		monthNum, err := strconv.Atoi(watchMonthDay)
-		if now.Day() == monthNum {
-			oneMonthElement := `
-                                   <tr>
-                                     <td width="50" align="center">` + fund["name"] + `</td>
-                                     <td width="50" align="center">` + fund["oneMonthChange"] + `</td>
-                                   </tr>
-                                   `
-			oneMonthElements = append(oneMonthElements, oneMonthElement)
-		}
-	}
-	dailyContent = strings.Join(dailyElements, "\n")
-	weeklyContent = strings.Join(weeklyElements, "\n")
-	oneMonthContent = strings.Join(oneMonthElements, "\n")
-	if dailyContent != "" || weeklyContent != "" || oneMonthContent != "" {
-		if dailyContent != "" {
-			dailyText = `
-                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
-				    ` + dailyTitle + dailyContent + `
-				    </table> <br><br>`
-		}
-		if weeklyContent != "" {
-			weeklyText = `
-                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
-				    ` + weeklyTitle + weeklyContent + `
-				    </table> <br><br>`
-		}
-		if oneMonthContent != "" {
-			oneMonthText = `
-                                    <table width="30%" border="1" cellspacing="0" cellpadding="0">
-				    ` + oneMonthTitle + oneMonthContent + `
-				    </table> <br><br>`
-		}
-		html := `
-			</html>
-			    <head>
-			        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-			    </head>
-                            <body>
-			        <div id="container">
-			            <p>基金涨跌监控:</p>
-			            <div id="content">
-				            ` + dailyText + weeklyText + oneMonthText + `
-				    </div>
-            	                </div>
-                            </body>
-                        </html>`
-
-		return html
-	}
-
-	return ""
-}
-
-func SendEmail(content string) {
+func sendEmail(content string) {
 	if content == "" {
 		return
 	}
-	emailName := os.Getenv("EMAIL_NAME")
-	emailPassword := os.Getenv("EMAIL_PASSWORD")
 	m := gomail.NewMessage()
 	m.SetHeader("From", emailName)
 	m.SetHeader("To", emailName)
@@ -217,7 +103,7 @@ func SendEmail(content string) {
 }
 
 func main() {
-	fundResult := FetchFund(fundCodeSlice)
-	content := GenerateHTML(fundResult)
-	SendEmail(content)
+	fundResult := fetchFund(fundCodeSlice)
+	content := renderHTML(fundResult)
+	sendEmail(content)
 }
